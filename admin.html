@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель</title>
+    <link rel="icon" href="https://i.ibb.co/99sHbMML/logo-operator.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #111827; color: #e5e7eb; }
+        .card { background-color: #1f2937; border: 1px solid #374151; }
+        .form-input { background-color: #374151; border: 1px solid #4b5563; }
+        .form-input:focus { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.4); }
+        .btn-danger { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+        .btn-primary { background: linear-gradient(90deg, #10b981, #2563eb); }
+        .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <header class="bg-gray-900/50 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-10">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-cogs text-2xl text-red-500"></i>
+                <h1 class="text-xl font-bold text-white">Админ-панель</h1>
+            </div>
+            <button id="logout-btn" class="text-sm text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-sign-out-alt mr-2"></i>Выйти</button>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Create Operator Form -->
+            <div class="lg:col-span-1">
+                <div class="card p-6 rounded-lg">
+                    <h2 class="text-xl font-bold mb-4">Создать оператора</h2>
+                    <form id="create-operator-form" class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium">Имя Фамилия и Отчество</label>
+                            <input type="text" id="name" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition">
+                        </div>
+                        <div>
+                            <label for="region" class="block text-sm font-medium">Регион</label>
+                            <input type="text" id="region" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition">
+                        </div>
+                        <div>
+                            <label for="operatorId" class="block text-sm font-medium">ID Оператора</label>
+                            <input type="text" id="operatorId" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition" placeholder="ID">
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium">Пароль</label>
+                            <input type="password" id="password" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition">
+                        </div>
+                        <p id="form-error" class="text-sm text-red-500 text-center hidden"></p>
+                        <button type="submit" class="w-full btn-primary py-2 px-4 rounded-md font-semibold hover:opacity-90 transition disabled:opacity-50">Создать</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Operators List -->
+            <div class="lg:col-span-2">
+                <h2 class="text-xl font-bold mb-4">Список операторов (<span id="operator-count">0</span>)</h2>
+                <div id="operators-list" class="space-y-3">
+                    <!-- Operator items will be here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Reset Password Modal -->
+    <div id="reset-password-modal" class="fixed inset-0 bg-black/60 z-30 flex items-center justify-center p-4 hidden opacity-0 modal">
+        <div id="reset-password-content" class="card p-6 w-full max-w-md rounded-lg space-y-4 transform scale-95 modal-content">
+            <h3 class="text-xl font-bold text-white">Сброс пароля</h3>
+            <p class="text-sm text-gray-400">Оператор: <span id="reset-operator-name" class="font-semibold text-white"></span></p>
+            <form id="reset-password-form" class="space-y-4">
+                 <div>
+                    <label for="new-password" class="block text-sm font-medium">Новый пароль</label>
+                    <input type="password" id="new-password" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition">
+                </div>
+                 <div>
+                    <label for="confirm-password" class="block text-sm font-medium">Подтвердите пароль</label>
+                    <input type="password" id="confirm-password" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition">
+                </div>
+                <p id="reset-error-message" class="text-sm text-red-500 text-center hidden"></p>
+                <div class="flex justify-end space-x-4 pt-2">
+                    <button type="button" id="cancel-reset-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-md font-semibold">Отмена</button>
+                    <button type="submit" class="px-4 py-2 btn-danger rounded-md font-semibold text-white">Сбросить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Action Confirmation Modal (for Freeze/Delete) -->
+    <div id="action-confirm-modal" class="fixed inset-0 bg-black/60 z-30 flex items-center justify-center p-4 hidden opacity-0 modal">
+        <div id="action-confirm-content" class="card p-6 w-full max-w-md rounded-lg space-y-4 transform scale-95 modal-content">
+            <h3 id="action-confirm-title" class="text-xl font-bold text-white"></h3>
+            <p class="text-sm text-gray-400">Для подтверждения действия, пожалуйста, введите ваш пароль администратора.</p>
+            <form id="action-confirm-form" class="space-y-4">
+                 <div>
+                    <label for="admin-password" class="block text-sm font-medium">Пароль администратора</label>
+                    <input type="password" id="admin-password" required class="mt-1 block w-full px-3 py-2 rounded-md form-input focus:outline-none transition">
+                </div>
+                <p id="action-confirm-error" class="text-sm text-red-500 text-center hidden"></p>
+                <div class="flex justify-end space-x-4 pt-2">
+                    <button type="button" id="cancel-action-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-md font-semibold">Отмена</button>
+                    <button type="submit" id="confirm-action-btn" class="px-4 py-2 btn-danger rounded-md font-semibold text-white"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALN7HBZkSipzmU4nZ5wao-vCzZh5PFdjI",
+            authDomain: "baza-dannikh.firebaseapp.com",
+            projectId: "baza-dannikh",
+            storageBucket: "baza-dannikh.appspot.com",
+            messagingSenderId: "227867059344",
+            appId: "1:227867059344:web:5afaa96d42f24ebdbce415",
+            measurementId: "G-MLE0HCZG8Y"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Auth Guard
+        onAuthStateChanged(auth, user => {
+            if (!user) {
+                window.location.href = './admin-login.html';
+            }
+        });
+
+        const createForm = document.getElementById('create-operator-form');
+        const formError = document.getElementById('form-error');
+        const operatorsList = document.getElementById('operators-list');
+        const operatorCount = document.getElementById('operator-count');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // Modals
+        const resetModal = document.getElementById('reset-password-modal');
+        const resetModalContent = document.getElementById('reset-password-content');
+        const resetOperatorName = document.getElementById('reset-operator-name');
+        const resetForm = document.getElementById('reset-password-form');
+        const resetError = document.getElementById('reset-error-message');
+        const cancelResetBtn = document.getElementById('cancel-reset-btn');
+        let currentResettingUser = { uid: null, name: null };
+
+        const actionConfirmModal = document.getElementById('action-confirm-modal');
+        const actionConfirmContent = document.getElementById('action-confirm-content');
+        const actionConfirmTitle = document.getElementById('action-confirm-title');
+        const actionConfirmForm = document.getElementById('action-confirm-form');
+        const actionConfirmError = document.getElementById('action-confirm-error');
+        const cancelActionBtn = document.getElementById('cancel-action-btn');
+        const confirmActionBtn = document.getElementById('confirm-action-btn');
+        let currentUserAction = { type: null, uid: null, name: null, payload: null };
+
+        // Create Operator
+        createForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            formError.classList.add('hidden');
+            const submitBtn = createForm.querySelector('button');
+            submitBtn.disabled = true;
+
+            const name = createForm['name'].value;
+            const region = createForm['region'].value;
+            const operatorId = createForm['operatorId'].value.trim();
+            const password = createForm['password'].value;
+            const email = `${operatorId.toLowerCase()}@operator.portal`;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                await setDoc(doc(db, "operators", user.uid), {
+                    name: name,
+                    region: region,
+                    operatorId: operatorId,
+                    disabled: false // Default status
+                });
+
+                createForm.reset();
+            } catch (error) {
+                console.error("Error creating operator:", error);
+                formError.textContent = "Не удалось создать оператора. ID может быть уже занят.";
+                formError.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Display Operators
+        onSnapshot(collection(db, "operators"), (snapshot) => {
+            operatorsList.innerHTML = '';
+            operatorCount.textContent = snapshot.size;
+            snapshot.forEach(doc => {
+                const operator = doc.data();
+                const statusIcon = operator.disabled 
+                    ? `<i class="fas fa-snowflake text-blue-400" title="Заморожен"></i>` 
+                    : `<i class="fas fa-lock-open text-green-500" title="Активен"></i>`;
+
+                const operatorEl = document.createElement('div');
+                operatorEl.className = 'card p-4 rounded-lg flex items-center justify-between';
+                operatorEl.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">${statusIcon}</span>
+                        <div>
+                            <p class="font-bold text-white">${operator.name}</p>
+                            <p class="text-sm text-gray-400">${operator.region} - <span class="font-mono">${operator.operatorId}</span></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button data-id="${doc.id}" data-name="${operator.name}" data-disabled="${operator.disabled}" class="freeze-btn text-gray-500 hover:text-blue-400 transition-colors p-2" title="${operator.disabled ? 'Разморозить' : 'Заморозить'}">
+                            <i class="fas ${operator.disabled ? 'fa-lock-open' : 'fa-snowflake'}"></i>
+                        </button>
+                        <button data-id="${doc.id}" data-name="${operator.name}" class="reset-btn text-gray-500 hover:text-amber-500 transition-colors p-2">
+                            <i class="fas fa-key"></i>
+                        </button>
+                        <button data-id="${doc.id}" class="delete-btn text-gray-500 hover:text-red-500 transition-colors p-2">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+                operatorsList.appendChild(operatorEl);
+            });
+        });
+
+        // Modal Logic
+        function openModal(modal, content) {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal(modal, content) {
+            modal.classList.add('opacity-0');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        // Handle clicks on operator list
+        operatorsList.addEventListener('click', async (e) => {
+            const targetBtn = e.target.closest('button');
+            if (!targetBtn) return;
+
+            const docId = targetBtn.dataset.id;
+            const name = targetBtn.dataset.name;
+
+            if (targetBtn.classList.contains('delete-btn')) {
+                currentUserAction = { type: 'delete', uid: docId, name };
+                actionConfirmTitle.textContent = `Удалить оператора ${name}?`;
+                confirmActionBtn.textContent = 'Удалить';
+                openModal(actionConfirmModal, actionConfirmContent);
+            } else if (targetBtn.classList.contains('reset-btn')) {
+                currentResettingUser = { uid: docId, name };
+                resetOperatorName.textContent = name;
+                openModal(resetModal, resetModalContent);
+            } else if (targetBtn.classList.contains('freeze-btn')) {
+                const isDisabled = targetBtn.dataset.disabled === 'true';
+                currentUserAction = { type: 'freeze', uid: docId, name, payload: { disabled: !isDisabled } };
+                actionConfirmTitle.textContent = isDisabled ? `Разморозить ${name}?` : `Заморозить ${name}?`;
+                confirmActionBtn.textContent = isDisabled ? 'Разморозить' : 'Заморозить';
+                openModal(actionConfirmModal, actionConfirmContent);
+            }
+        });
+
+        // Handle Reset Password
+        resetForm.addEventListener('submit', async (e) => {
+             e.preventDefault();
+            const newPassword = resetForm['new-password'].value;
+            const confirmPassword = resetForm['confirm-password'].value;
+            const submitBtn = resetForm.querySelector('button[type="submit"]');
+
+            if (newPassword !== confirmPassword) {
+                resetError.textContent = "Пароли не совпадают.";
+                resetError.classList.remove('hidden');
+                return;
+            }
+            if (newPassword.length < 6) {
+                resetError.textContent = "Пароль должен быть не менее 6 символов.";
+                resetError.classList.remove('hidden');
+                return;
+            }
+
+            resetError.classList.add('hidden');
+            submitBtn.disabled = true;
+
+            const functionUrl = 'https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/updateUserPassword';
+            alert('Для сброса пароля требуется развертывание облачной функции. URL-адрес функции не настроен.');
+            
+           submitBtn.disabled = false;
+        });
+        
+        // Handle Action Confirmation (Freeze/Delete)
+        actionConfirmForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const adminPassword = actionConfirmForm['admin-password'].value;
+            const submitBtn = actionConfirmForm.querySelector('button[type="submit"]');
+
+            if (!adminPassword) return;
+
+            actionConfirmError.classList.add('hidden');
+            submitBtn.disabled = true;
+
+            try {
+                const admin = auth.currentUser;
+                const credential = EmailAuthProvider.credential(admin.email, adminPassword);
+                await reauthenticateWithCredential(admin, credential);
+
+                // Re-authentication successful, proceed with action
+                if (currentUserAction.type === 'freeze') {
+                    await updateDoc(doc(db, "operators", currentUserAction.uid), currentUserAction.payload);
+                    alert(`Статус аккаунта для ${currentUserAction.name} успешно изменен.`);
+                } else if (currentUserAction.type === 'delete') {
+                    await deleteDoc(doc(db, "operators", currentUserAction.uid));
+                    alert(`Запись оператора ${currentUserAction.name} удалена из Firestore. ВАЖНО: Аккаунт для входа (в Authentication) нужно удалить вручную в консоли Firebase.`);
+                }
+                
+                closeModal(actionConfirmModal, actionConfirmContent);
+
+            } catch (error) {
+                console.error("Action confirmation error:", error);
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    actionConfirmError.textContent = "Неверный пароль администратора.";
+                } else {
+                    actionConfirmError.textContent = `Ошибка: ${error.message}.`;
+                }
+                actionConfirmError.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                actionConfirmForm.reset();
+            }
+        });
+        
+        cancelResetBtn.addEventListener('click', () => closeModal(resetModal, resetModalContent));
+        cancelActionBtn.addEventListener('click', () => closeModal(actionConfirmModal, actionConfirmContent));
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+    </script>
+</body>
+</html>
